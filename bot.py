@@ -3,9 +3,11 @@ import json
 import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ApplicationBuilder
+from telegram.error import NetworkError
 from github import Github
 import base64
 from aiohttp import web
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -139,10 +141,22 @@ async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Bot ishga tushdi! Kanalda hashtag va video yuboring.")
 
+# Error handler
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.error(f"Xato yuz berdi: {context.error}")
+    if isinstance(context.error, NetworkError):
+        logger.warning("Tarmoq xatosi aniqlandi, qayta urinish mumkin.")
+        if update and update.message:
+            await update.message.reply_text("Tarmoq xatosi yuz berdi, iltimos qayta urinib ko‘ring.")
+    else:
+        if update and update.message:
+            await update.message.reply_text("Xato yuz berdi, iltimos keyinroq qayta urinib ko‘ring.")
+
 # Handlerlar
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.ChatType.CHANNEL, channel_handler))
 application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT, private_handler))
+application.add_error_handler(error_handler)
 
 # Webhook server
 async def webhook(request):
@@ -163,6 +177,15 @@ async def webhook(request):
 
 # Aiohttp serverini sozlash
 app = web.Application()
+
+# Event loop va serverni to‘g‘ri yopish uchun cleanup
+async def shutdown_app():
+    logger.info("Shutting down application...")
+    await application.stop()
+    await application.shutdown()
+    logger.info("Application stopped.")
+
+app.on_shutdown.append(shutdown_app)
 app.router.add_post(f"/{TOKEN}", webhook)
 
 # Webhook'ni o'rnatish va Application ni ishga tushirish
@@ -182,10 +205,18 @@ async def setup_application():
 
 # Serverni ishga tushirish
 if __name__ == "__main__":
-    import asyncio
+    # Yangi event loop yaratish
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     # Setup qilish
-    asyncio.run(setup_application())
+    loop.run_until_complete(setup_application())
+    
     # Serverni ishga tushirish
     port = int(os.getenv("PORT", 8000))  # Render PORT ni muhit o'zgaruvchisidan oladi, default 8000
     logger.info(f"Starting server on port {port}")
-    web.run_app(app, host="0.0.0.0", port=port)
+    try:
+        web.run_app(app, host="0.0.0.0", port=port, loop=loop)
+    finally:
+        loop.close()
+        logger.info("Event loop closed.")
