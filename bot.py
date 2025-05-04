@@ -72,6 +72,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL muhit o'zgaruvchisi topilmadi!")
 
+# Application ni yaratish
 application = ApplicationBuilder().token(TOKEN).build()
 
 # Kanalga kelgan xabarlar
@@ -145,22 +146,46 @@ application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT, 
 
 # Webhook server
 async def webhook(request):
-    update = await request.json()
-    update_obj = Update.de_json(update, application.bot)
-    await application.process_update(update_obj)
-    return web.Response(text="OK")
+    try:
+        update = await request.json()
+        if not update:
+            logger.warning("Received empty update from Telegram")
+            return web.Response(text="No update received", status=400)
+        update_obj = Update.de_json(update, application.bot)
+        if update_obj is None:
+            logger.warning("Failed to parse update from Telegram")
+            return web.Response(text="Invalid update", status=400)
+        await application.process_update(update_obj)
+        return web.Response(text="OK")
+    except Exception as e:
+        logger.error(f"Error in webhook handler: {e}")
+        return web.Response(text="Internal Server Error", status=500)
 
+# Aiohttp serverini sozlash
 app = web.Application()
 app.router.add_post(f"/{TOKEN}", webhook)
 
-# Webhook'ni o'rnatish
-async def set_webhook():
-    await application.bot.setWebhook(f"{WEBHOOK_URL}/{TOKEN}")
-    logger.info(f"Webhook set to {WEBHOOK_URL}/{TOKEN}")
+# Webhook'ni o'rnatish va Application ni ishga tushirish
+async def setup_application():
+    # Application ni initialize qilish
+    await application.initialize()
+    logger.info("Application initialized")
+
+    # Webhook'ni o'rnatish
+    webhook_url = f"{WEBHOOK_URL}/{TOKEN}"
+    await application.bot.setWebhook(webhook_url)
+    logger.info(f"Webhook set to {webhook_url}")
+
+    # Application ni ishga tushirish
+    await application.start()
+    logger.info("Application started")
 
 # Serverni ishga tushirish
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(set_webhook())
+    # Setup qilish
+    asyncio.run(setup_application())
+    # Serverni ishga tushirish
     port = int(os.getenv("PORT", 8000))  # Render PORT ni muhit o'zgaruvchisidan oladi, default 8000
-    web.run_app(app, port=port)
+    logger.info(f"Starting server on port {port}")
+    web.run_app(app, host="0.0.0.0", port=port)
