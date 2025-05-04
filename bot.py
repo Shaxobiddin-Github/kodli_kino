@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from telegram.error import NetworkError
 from github import Github
 import base64
-from aiohttp import web
+from aiohttp import web, ClientSession
 import asyncio
 
 logging.basicConfig(level=logging.INFO)
@@ -175,6 +175,23 @@ async def webhook(request):
         logger.error(f"Error in webhook handler: {e}")
         return web.Response(text="Internal Server Error", status=500)
 
+# Keep-alive uchun GET endpoint
+async def keepalive(request):
+    logger.info("Keep-alive request received")
+    return web.Response(text="OK")
+
+# Keep-alive funksiyasi
+async def keep_alive():
+    webhook_url = f"{WEBHOOK_URL}/{TOKEN}"
+    async with ClientSession() as session:
+        while True:
+            try:
+                async with session.post(webhook_url, json={}) as response:
+                    logger.info(f"Keep-alive request sent, status: {response.status}")
+            except Exception as e:
+                logger.error(f"Keep-alive request failed: {e}")
+            await asyncio.sleep(600)  # Har 10 daqiqada (600 soniya) so‘rov yuborish
+
 # Aiohttp serverini sozlash
 app = web.Application()
 
@@ -187,6 +204,7 @@ async def shutdown_app():
 
 app.on_shutdown.append(shutdown_app)
 app.router.add_post(f"/{TOKEN}", webhook)
+app.router.add_get("/keepalive", keepalive)
 
 # Webhook'ni o'rnatish va Application ni ishga tushirish
 async def setup_application():
@@ -211,6 +229,9 @@ if __name__ == "__main__":
 
     # Setup qilish
     loop.run_until_complete(setup_application())
+    
+    # Keep-alive vazifasini ishga tushirish
+    loop.create_task(keep_alive())
     
     # Serverni ishga tushirish
     port = int(os.getenv("PORT", 8000))  # Render PORT ni muhit o'zgaruvchisidan oladi, default 8000
