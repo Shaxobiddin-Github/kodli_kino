@@ -8,6 +8,7 @@ from github import Github
 import base64
 from aiohttp import web, ClientSession
 import asyncio
+from telegram.ext import ContextTypes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -137,9 +138,19 @@ async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await message.reply_text("Kechirasiz, bu kod uchun video topilmadi.")
         logger.info("Video topilmadi.")
 
-# Start komandasi (test uchun)
+# Start komandasi (test uchun)from telegram import Update
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Bot ishga tushdi! Kanalda hashtag va video yuboring.")
+    text = (
+        "🎬 *Assalomu alaykum!*\n\n"
+        "Bu bot yordamida siz *film kodi* orqali filmni topishingiz mumkin. 🎥\n"
+        "Bot sizga film haqida ma'lumot, treyler va *Instagram havolasini* yuboradi. 📱\n\n"
+        "📌 *Rasmiy Telegram kanalimiz:* [Kodli Kinolar](https://t.me/kodli_kinolar_1234)\n"
+        "📸 *Instagram sahifamiz:* [@uz_film_zone](https://www.instagram.com/uz_film_zone)\n\n"
+        "Film topish uchun kod yuboring yoki /help buyrug‘idan foydalaning. ✅"
+    )
+
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 # Error handler
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
