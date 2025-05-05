@@ -186,11 +186,17 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update and update.message:
             await update.message.reply_text("Xato yuz berdi, iltimos keyinroq qayta urinib ko‘ring.")
 
-# Handlerlar
+# Avval komandalarni qo‘shish
 application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("help", help_command))
+
+# Keyin kanal va shaxsiy xabarlar
 application.add_handler(MessageHandler(filters.ChatType.CHANNEL, channel_handler))
-application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT, private_handler))
+application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, private_handler))
+
+# Xatoliklar uchun
 application.add_error_handler(error_handler)
+
 
 # Webhook server
 async def webhook(request):
