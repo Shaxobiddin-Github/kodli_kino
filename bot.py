@@ -230,7 +230,7 @@ async def keep_alive():
 app = web.Application()
 
 # Event loop va serverni to‘g‘ri yopish uchun cleanup
-async def shutdown_app():
+async def shutdown_app(app):
     logger.info("Shutting down application...")
     await application.stop()
     await application.shutdown()
