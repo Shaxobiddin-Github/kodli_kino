@@ -110,20 +110,6 @@ async def channel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "❓ *Yordam bo‘limi*\n\n"
-        "🔹 *Botdan foydalanish bo‘yicha ko‘rsatmalar:*\n"
-        "1. Film kodini yuboring (masalan: `1234`).\n"
-        "2. Bot sizga filmning videosini, tavsifini va Instagram havolasini yuboradi.\n"
-        "3. Agar sizda kod bo‘lmasa, uni rasmiy kanalimizdan topishingiz mumkin.\n\n"
-        "📌 *Telegram kanalimiz:* [Kodli Kinolar](https://t.me/kodli_kinolar_1234)\n"
-        "📸 *Instagram sahifamiz:* [@uz_film_zone](https://www.instagram.com/uz_film_zone)\n\n"
-        "Agar savollaringiz bo‘lsa, biz bilan bog‘laning. ✅"
-    )
-
-    await update.message.reply_text(text, parse_mode="Markdown")
-
 
 
 # Botga shaxsiy yozilgan xabarlar
@@ -169,6 +155,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(text, parse_mode="Markdown")
+
+
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "❓ *Yordam bo‘limi*\n\n"
+        "🔹 *Botdan foydalanish bo‘yicha ko‘rsatmalar:*\n"
+        "1. Film kodini yuboring (masalan: `1234`).\n"
+        "2. Bot sizga filmning videosini, tavsifini va Instagram havolasini yuboradi.\n"
+        "3. Agar sizda kod bo‘lmasa, uni rasmiy kanalimizdan topishingiz mumkin.\n\n"
+        "📌 *Telegram kanalimiz:* [Kodli Kinolar](https://t.me/kodli_kinolar_1234)\n"
+        "📸 *Instagram sahifamiz:* [@uz_film_zone](https://www.instagram.com/uz_film_zone)\n\n"
+        "Agar savollaringiz bo‘lsa, biz bilan bog‘laning. ✅"
+    )
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
 
 # Error handler
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
