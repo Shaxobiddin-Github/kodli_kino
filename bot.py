@@ -108,6 +108,24 @@ async def channel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         logger.info("Xabar hashtag yoki video emas.")
 
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "❓ *Yordam bo‘limi*\n\n"
+        "🔹 *Botdan foydalanish bo‘yicha ko‘rsatmalar:*\n"
+        "1. Film kodini yuboring (masalan: `1234`).\n"
+        "2. Bot sizga filmning videosini, tavsifini va Instagram havolasini yuboradi.\n"
+        "3. Agar sizda kod bo‘lmasa, uni rasmiy kanalimizdan topishingiz mumkin.\n\n"
+        "📌 *Telegram kanalimiz:* [Kodli Kinolar](https://t.me/kodli_kinolar_1234)\n"
+        "📸 *Instagram sahifamiz:* [@uz_film_zone](https://www.instagram.com/uz_film_zone)\n\n"
+        "Agar savollaringiz bo‘lsa, biz bilan bog‘laning. ✅"
+    )
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+
 # Botga shaxsiy yozilgan xabarlar
 async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
@@ -222,6 +240,8 @@ async def setup_application():
     # Application ni initialize qilish
     await application.initialize()
     logger.info("Application initialized")
+
+    application.add_handler(CommandHandler("help", help_command))
 
     # Webhook'ni o'rnatish
     webhook_url = f"{WEBHOOK_URL}/{TOKEN}"
