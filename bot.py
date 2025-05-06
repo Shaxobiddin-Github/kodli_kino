@@ -13,7 +13,9 @@ from telegram.ext import ContextTypes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-CHANNEL_USERNAME = "@uz_film_zone"  # Kanal usernamesi
+CHANNELS = [
+    {"username": "@uz_film_zone", "name": "Kodli Kinolar"},
+]
 
 # GitHub sozlamalari
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -146,37 +148,54 @@ async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Start komandasi (test uchun)from telegram import Update
 from telegram.error import NetworkError, TelegramError
+
+# Foydalanuvchining kanal a'zoligini tekshirish
 async def check_channel_membership(bot, user_id: int, channel_username: str) -> bool:
     try:
         chat_member = await bot.get_chat_member(chat_id=channel_username, user_id=user_id)
-        # Agar foydalanuvchi a'zo bo'lsa, status 'member', 'administrator' yoki 'creator' bo'ladi
         return chat_member.status in ['member', 'administrator', 'creator']
     except TelegramError as e:
-        logger.error(f"Kanal a'zoligini tekshirishda xato: {e}")
+        logger.error(f"Kanal {channel_username} a'zoligini tekshirishda xato: {e}")
         return False
 
+# Barcha kanallarga a'zolikni tekshirish
+async def check_all_channels(bot, user_id: int) -> list:
+    non_member_channels = []
+    for channel in CHANNELS:
+        is_member = await check_channel_membership(bot, user_id, channel["username"])
+        if not is_member:
+            non_member_channels.append(channel)
+    return non_member_channels
 
+# Kanallar ro'yxatini buttonlar bilan ko'rsatish
+def create_channels_keyboard(non_member_channels: list) -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(channel["name"], url=f"https://t.me/{channel['username'].lstrip('@')}")]
+        for channel in non_member_channels
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
+# Start komandasi
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_chat_id = update.effective_chat.id
 
-    # Foydalanuvchining kanal a'zoligini tekshirish
-    is_member = await check_channel_membership(context.bot, user_id, CHANNEL_USERNAME)
+    # Barcha kanallarga a'zolikni tekshirish
+    non_member_channels = await check_all_channels(context.bot, user_id)
 
-    if not is_member:
-        # Agar foydalanuvchi kanalga a'zo bo'lmasa
+    if non_member_channels:
+        # Agar foydalanuvchi barcha kanallarga a'zo bo'lmasa
         text = (
             "🎬 *Assalomu alaykum!*\n\n"
-            "Botdan to'liq foydalanish uchun iltimos, quyidagi kanalimizga a'zo bo'ling:\n"
-            f"📌 [Kodli Kinolar](https://t.me/uz_film_zone)\n\n"
+            "Botdan to'liq foydalanish uchun quyidagi kanallarga a'zo bo'ling:\n\n"
             "A'zo bo'lgandan so'ng, qayta `/start` buyrug'ini yuboring. ✅"
         )
-        await update.message.reply_text(text, parse_mode="Markdown")
-        logger.info(f"Foydalanuvchi {user_id} kanalga a'zo emas.")
+        reply_markup = create_channels_keyboard(non_member_channels)
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
+        logger.info(f"Foydalanuvchi {user_id} ba'zi kanallarga a'zo emas: {[ch['username'] for ch in non_member_channels]}")
         return
 
-    # Agar foydalanuvchi kanalga a'zo bo'lsa, odatiy xabarni yuborish
+    # Agar foydalanuvchi barcha kanallarga a'zo bo'lsa
     text = (
         "🎬 *Assalomu alaykum!*\n\n"
         "Bu bot yordamida siz *film kodi* orqali filmni topishingiz mumkin. 🎥\n"
@@ -186,9 +205,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Film topish uchun kod yuboring yoki /help buyrug‘idan foydalaning. ✅"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
-    logger.info(f"Foydalanuvchi {user_id} kanalga a'zo, start xabari yuborildi.")
-
-
+    logger.info(f"Foydalanuvchi {user_id} barcha kanallarga a'zo, start xabari yuborildi.")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
