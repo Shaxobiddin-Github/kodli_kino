@@ -6,6 +6,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from telegram.error import NetworkError
 from github import Github
 import base64
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from aiohttp import web, ClientSession
 import asyncio
 from telegram.ext import ContextTypes
