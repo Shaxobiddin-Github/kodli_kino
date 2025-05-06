@@ -13,6 +13,8 @@ from telegram.ext import ContextTypes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+CHANNEL_USERNAME = "@uz_film_zone"  # Kanal usernamesi
+
 # GitHub sozlamalari
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 if not GITHUB_TOKEN:
@@ -143,18 +145,48 @@ async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info("Video topilmadi.")
 
 # Start komandasi (test uchun)from telegram import Update
+from telegram.error import NetworkError, TelegramError
+async def check_channel_membership(bot, user_id: int, channel_username: str) -> bool:
+    try:
+        chat_member = await bot.get_chat_member(chat_id=channel_username, user_id=user_id)
+        # Agar foydalanuvchi a'zo bo'lsa, status 'member', 'administrator' yoki 'creator' bo'ladi
+        return chat_member.status in ['member', 'administrator', 'creator']
+    except TelegramError as e:
+        logger.error(f"Kanal a'zoligini tekshirishda xato: {e}")
+        return False
+
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_chat_id = update.effective_chat.id
+
+    # Foydalanuvchining kanal a'zoligini tekshirish
+    is_member = await check_channel_membership(context.bot, user_id, CHANNEL_USERNAME)
+
+    if not is_member:
+        # Agar foydalanuvchi kanalga a'zo bo'lmasa
+        text = (
+            "🎬 *Assalomu alaykum!*\n\n"
+            "Botdan to'liq foydalanish uchun iltimos, quyidagi kanalimizga a'zo bo'ling:\n"
+            f"📌 [Kodli Kinolar](https://t.me/uz_film_zone)\n\n"
+            "A'zo bo'lgandan so'ng, qayta `/start` buyrug'ini yuboring. ✅"
+        )
+        await update.message.reply_text(text, parse_mode="Markdown")
+        logger.info(f"Foydalanuvchi {user_id} kanalga a'zo emas.")
+        return
+
+    # Agar foydalanuvchi kanalga a'zo bo'lsa, odatiy xabarni yuborish
     text = (
         "🎬 *Assalomu alaykum!*\n\n"
         "Bu bot yordamida siz *film kodi* orqali filmni topishingiz mumkin. 🎥\n"
         "Bot sizga film haqida ma'lumot, treyler va *Instagram havolasini* yuboradi. 📱\n\n"
-        "📌 *Rasmiy Telegram kanalimiz:* [Kodli Kinolar](https://t.me/kodli_kinolar_1234)\n"
+        "📌 *Rasmiy Telegram kanalimiz:* [Kodli Kinolar](https://t.me/uz_film_zone)\n"
         "📸 *Instagram sahifamiz:* [@uz_film_zone](https://www.instagram.com/uz_film_zone)\n\n"
         "Film topish uchun kod yuboring yoki /help buyrug‘idan foydalaning. ✅"
     )
-
     await update.message.reply_text(text, parse_mode="Markdown")
+    logger.info(f"Foydalanuvchi {user_id} kanalga a'zo, start xabari yuborildi.")
 
 
 
