@@ -285,11 +285,11 @@ async def keepalive(request):
 
 # Keep-alive funksiyasi
 async def keep_alive():
-    webhook_url = f"{WEBHOOK_URL}/{TOKEN}"
+    keepalive_url = f"{WEBHOOK_URL}/keepalive"
     async with ClientSession() as session:
         while True:
             try:
-                async with session.post(webhook_url, json={}) as response:
+                async with session.get(keepalive_url) as response:
                     logger.info(f"Keep-alive request sent, status: {response.status}")
             except Exception as e:
                 logger.error(f"Keep-alive request failed: {e}")
