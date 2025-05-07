@@ -182,11 +182,13 @@ async def check_all_channels(bot, user_id: int) -> list:
     return non_member_channels
 
 # Kanallar ro'yxatini buttonlar bilan ko'rsatish
-def create_channels_keyboard(non_member_channels: list) -> InlineKeyboardMarkup:
+def create_channels_keyboard(non_member_channels: list, check_btn: bool = True) -> InlineKeyboardMarkup:
     keyboard = [
-        [InlineKeyboardButton(channel["name"], url=f"https://t.me/{channel['username'].lstrip('@')}")]
+        [InlineKeyboardButton(channel["name"], url=f"https://t.me/{channel['username'].lstrip('@']}")]
         for channel in non_member_channels
     ]
+    if check_btn:
+        keyboard.append([InlineKeyboardButton("✅ Tekshirish", callback_data="check_membership")])
     return InlineKeyboardMarkup(keyboard)
 
 # Start komandasi
@@ -197,14 +199,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Barcha kanallarga a'zolikni tekshirish
     non_member_channels = await check_all_channels(context.bot, user_id)
 
-    if (non_member_channels):
-        # Agar foydalanuvchi barcha kanallarga a'zo bo'lmasa
+    if non_member_channels:
         text = (
             "🎬 *Assalomu alaykum!*\n\n"
             "Botdan to'liq foydalanish uchun quyidagi kanallarga a'zo bo'ling:\n\n"
-            "A'zo bo'lgandan so'ng, qayta `/start` buyrug'ini yuboring. ✅"
+            "A'zo bo'lgandan so'ng, pastdagi \"✅ Tekshirish\" tugmasini bosing."
         )
-        reply_markup = create_channels_keyboard(non_member_channels)
+        reply_markup = create_channels_keyboard(non_member_channels, check_btn=True)
         await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
         logger.info(f"Foydalanuvchi {user_id} ba'zi kanallarga a'zo emas: {[ch['username'] for ch in non_member_channels]}")
         return
@@ -238,6 +239,28 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
+async def check_membership_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user_id = query.from_user.id
+
+    non_member_channels = await check_all_channels(context.bot, user_id)
+    if non_member_channels:
+        text = (
+            "❗️ Botdan foydalanish uchun quyidagi kanallarga a'zo bo‘ling:\n"
+            "A'zo bo‘lgach, pastdagi \"✅ Tekshirish\" tugmasini yana bosing."
+        )
+        reply_markup = create_channels_keyboard(non_member_channels, check_btn=True)
+        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=reply_markup)
+        logger.info(f"Foydalanuvchi {user_id} hali barcha kanallarga a'zo emas (callback).")
+    else:
+        text = (
+            "🎬 *Tabriklaymiz!*\n\n"
+            "Siz barcha kanallarga a'zo bo‘ldingiz va botdan to‘liq foydalanishingiz mumkin!\n\n"
+            "Endi film kodi yuboring yoki /help buyrug‘idan foydalaning."
+        )
+        await query.edit_message_text(text, parse_mode="Markdown")
+        logger.info(f"Foydalanuvchi {user_id} barcha kanallarga a'zo bo'ldi (callback).")
+
 # Error handler
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Xato yuz berdi: {context.error}")
@@ -252,6 +275,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Avval komandalarni qo‘shish
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
+application.add_handler(CallbackQueryHandler(check_membership_callback, pattern="^check_membership$"))
 
 # Keyin kanal va shaxsiy xabarlar
 application.add_handler(MessageHandler(filters.ChatType.CHANNEL, channel_handler))
