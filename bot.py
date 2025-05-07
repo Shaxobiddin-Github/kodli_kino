@@ -128,6 +128,19 @@ async def private_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"Foydalanuvchi yubordi: {text}")
 
+    # --- Yangi kod: Avval kanal a'zoligini tekshirish ---
+    non_member_channels = await check_all_channels(context.bot, update.effective_user.id)
+    if non_member_channels:
+        text_uz = (
+            "❗️ Botdan foydalanish uchun quyidagi kanallarga a'zo bo‘ling:\n"
+            "A'zo bo‘lgach, qayta /start buyrug‘ini yuboring."
+        )
+        reply_markup = create_channels_keyboard(non_member_channels)
+        await message.reply_text(text_uz, parse_mode="Markdown", reply_markup=reply_markup)
+        logger.info(f"Foydalanuvchi {update.effective_user.id} hali barcha kanallarga a'zo emas.")
+        return
+    # --- Yangi kod tugadi ---
+
     if text in hashtag_to_video:
         video_chat_id, video_msg_id = hashtag_to_video[text]
         # Video yuborish
@@ -184,7 +197,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Barcha kanallarga a'zolikni tekshirish
     non_member_channels = await check_all_channels(context.bot, user_id)
 
-    if non_member_channels:
+    if (non_member_channels):
         # Agar foydalanuvchi barcha kanallarga a'zo bo'lmasa
         text = (
             "🎬 *Assalomu alaykum!*\n\n"
