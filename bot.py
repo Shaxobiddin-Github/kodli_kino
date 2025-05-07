@@ -3,6 +3,7 @@ import json
 import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ApplicationBuilder
+from telegram.ext import CallbackQueryHandler  # <-- shu qatorda import qiling
 from telegram.error import NetworkError
 from github import Github
 import base64
@@ -184,7 +185,7 @@ async def check_all_channels(bot, user_id: int) -> list:
 # Kanallar ro'yxatini buttonlar bilan ko'rsatish
 def create_channels_keyboard(non_member_channels: list, check_btn: bool = True) -> InlineKeyboardMarkup:
     keyboard = [
-        [InlineKeyboardButton(channel["name"], url=f"https://t.me/{channel['username'].lstrip('@']}")]
+        [InlineKeyboardButton(channel["name"], url=f"https://t.me/{channel['username'].lstrip('@')}")]
         for channel in non_member_channels
     ]
     if check_btn:
